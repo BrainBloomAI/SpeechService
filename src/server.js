@@ -3,7 +3,7 @@ const http = require("http");
 const socketIO = require("socket.io");
 const cors = require("cors");
 const bodyParser = require('body-parser')
-const config = require("config")
+const config = require("./config")
 const dotenv = require("dotenv");
 const { Readable } = require("node:stream")
 const { Console } = require("console");
@@ -55,6 +55,20 @@ recognitionNsp.on("connection", (socket) => {
 
 	})
 
+	let previousAudio = new ArrayBuffer(0)
+	const appendAudio = (audioBuffer) => {
+		let oldView = new Uint8Array(previousAudio)
+		let newView = new Uint8Array(audioBuffer)
+
+		let combinedBuffer = new ArrayBuffer(oldView.length +newView.length)
+		let combinedView = new Uint8Array(combinedBuffer)
+
+		combinedView.set(oldView, 0)
+		combinedView.set(newView, oldView.length)
+
+		previousAudio = combinedBuffer
+		return previousAudio;
+	}
 	socket.on("audio", (message) => {
 		console.log("socket: client data received");
 		if (deepgram == null) {
@@ -65,13 +79,21 @@ recognitionNsp.on("connection", (socket) => {
 
 		if (deepgram.getReadyState() === 1 /* OPEN */) {
 			console.log("socket: data sent to deepgram");
-			deepgram.send(new Blob([message]));
+			if (previousAudio.byteLength >= 1) {
+				deepgram.send(new Blob([appendAudio(message)]));
+				previousAudio = new ArrayBuffer(0)
+			} else {
+				deepgram.send(new Blob([message]))
+			}
 		} else if (deepgram.getReadyState() >= 2 /* 2 = CLOSING, 3 = CLOSED */) {
 			console.log("socket: retrying connection to deepgram");
 			deepgram.finish();
 			deepgram.removeAllListeners();
-			deepgram = recognitionModel(socket, resetRecognitionInstance);
+			
+			appendAudio(message) // store chunk for use later
+			deepgram = recognitionModel(socket, resetRecognitionInstance)
 		} else {
+			appendAudio(message) // store chunk for use later
 			console.log("socket: data couldn't be sent to deepgram");
 		}
 	});

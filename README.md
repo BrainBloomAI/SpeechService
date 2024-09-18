@@ -1,6 +1,9 @@
 # BrainBloomAI's Speech Service
 Handles speech synthesis and recognition within BrainBloomAI with multilanguage support
 
+- Recognition: Uses websockets to streams raw audio data in opus codecs in mpeg containers for live transcription
+- Synthesis: Uses simple HTTP requests to obtain streamable audio data in aac codecs
+
 # Startup
 To startup a development server,
 ```

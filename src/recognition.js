@@ -8,6 +8,7 @@ const recognitionModel = (socket, closeFn, res) => {
 		smart_format: true,
 		model: "nova-2",
 
+		encoding: "opus",
 		filler_words: true,
 
 		interim_results: true,
@@ -23,7 +24,7 @@ const recognitionModel = (socket, closeFn, res) => {
 		console.log("deepgram: connected!!", res);
 
 		deepgram.addListener(LiveTranscriptionEvents.Transcript, (data) => {
-			console.log("deepgram: transcript received\n\t", data.speech_final, data.channel.alternatives[0].transcript);
+			console.log("deepgram: transcript received\n\t", data.type, data.speech_final, data.channel.alternatives[0].transcript);
 
 			if (data.speech_final) {
 				// End of speech
