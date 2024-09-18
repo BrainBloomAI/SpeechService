@@ -27,12 +27,19 @@ const recognitionNsp = io.of("recognition")
 recognitionNsp.on("connection", (socket) => {
 	console.log("socket: client connected");
 	let deepgram;
+	let globalPrefs = {
+		lang: 0
+	}
 
 	const resetRecognitionInstance = () => {
 		deepgram.finish()
 		deepgram.removeAllListeners()
 		deepgram = null
 	}
+
+	socket.on("set-prefs", (prefs) => {
+		globalPrefs = prefs
+	})
 
 	socket.on("preload", (message) => {
 		console.log("preload event")
@@ -47,7 +54,7 @@ recognitionNsp.on("connection", (socket) => {
 		const promise = new Promise(res => {
 			resolverFn = res
 			console.log(resolverFn)
-			deepgram = recognitionModel(socket, resetRecognitionInstance, resolverFn);
+			deepgram = recognitionModel(socket, globalPrefs.lang, resetRecognitionInstance, resolverFn);
 		}).then(() => {
 			console.log("emiting preload-ready")
 			socket.emit("preload-ready")
@@ -72,7 +79,7 @@ recognitionNsp.on("connection", (socket) => {
 	socket.on("audio", (message) => {
 		console.log("socket: client data received");
 		if (deepgram == null) {
-			deepgram = recognitionModel(socket, resetRecognitionInstance)
+			deepgram = recognitionModel(socket, globalPrefs.lang, resetRecognitionInstance)
 		}
 
 		console.log("readystate", deepgram.getReadyState())
@@ -91,7 +98,7 @@ recognitionNsp.on("connection", (socket) => {
 			deepgram.removeAllListeners();
 			
 			appendAudio(message) // store chunk for use later
-			deepgram = recognitionModel(socket, resetRecognitionInstance)
+			deepgram = recognitionModel(socket, globalPrefs.lang, resetRecognitionInstance)
 		} else {
 			appendAudio(message) // store chunk for use later
 			console.log("socket: data couldn't be sent to deepgram");

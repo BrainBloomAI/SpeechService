@@ -1,9 +1,9 @@
 const { LiveTranscriptionEvents } = require("@deepgram/sdk");
 const { deepgramClient } = require("./deepgramClient");
 
-const recognitionModel = (socket, closeFn, res) => {
+const recognitionModel = (socket, lang, closeFn, res) => {
 	const deepgram = deepgramClient.listen.live({
-		language: "en",
+		language: ["en", "zh-CN"][lang],
 		punctuate: true,
 		smart_format: true,
 		model: "nova-2",
