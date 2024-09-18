@@ -1,0 +1,127 @@
+const express = require("express");
+const http = require("http");
+const socketIO = require("socket.io");
+const cors = require("cors");
+const bodyParser = require('body-parser')
+const config = require("config")
+const dotenv = require("dotenv");
+const { Readable } = require("node:stream")
+const { Console } = require("console");
+dotenv.config();
+
+const { recognitionModel } = require("./recognition")
+const { synthesisModel } = require("./synthesis")
+
+const app = express();
+const server = http.createServer(app);
+const io = socketIO(server, {
+	cors: {
+		origin: config.invokeOrigin,
+		methods: ["GET", "POST"],
+		credentials: true
+	}
+});
+
+
+const recognitionNsp = io.of("recognition")
+recognitionNsp.on("connection", (socket) => {
+	console.log("socket: client connected");
+	let deepgram;
+
+	const resetRecognitionInstance = () => {
+		deepgram.finish()
+		deepgram.removeAllListeners()
+		deepgram = null
+	}
+
+	socket.on("preload", (message) => {
+		console.log("preload event")
+		if (deepgram && deepgram.getReadyState() === 1) {
+			console.log("already active")
+			socket.emit("preload-ready")
+			return // already connected
+		}
+		console.log("passed")
+
+		let resolverFn;
+		const promise = new Promise(res => {
+			resolverFn = res
+			console.log(resolverFn)
+			deepgram = recognitionModel(socket, resetRecognitionInstance, resolverFn);
+		}).then(() => {
+			console.log("emiting preload-ready")
+			socket.emit("preload-ready")
+		})
+
+	})
+
+	socket.on("audio", (message) => {
+		console.log("socket: client data received");
+		if (deepgram == null) {
+			deepgram = recognitionModel(socket, resetRecognitionInstance)
+		}
+
+		console.log("readystate", deepgram.getReadyState())
+
+		if (deepgram.getReadyState() === 1 /* OPEN */) {
+			console.log("socket: data sent to deepgram");
+			deepgram.send(new Blob([message]));
+		} else if (deepgram.getReadyState() >= 2 /* 2 = CLOSING, 3 = CLOSED */) {
+			console.log("socket: retrying connection to deepgram");
+			deepgram.finish();
+			deepgram.removeAllListeners();
+			deepgram = recognitionModel(socket, resetRecognitionInstance);
+		} else {
+			console.log("socket: data couldn't be sent to deepgram");
+		}
+	});
+
+	socket.on("disconnect", () => {
+		console.log("socket: client disconnected");
+		if (deepgram) {
+			deepgram.finish();
+			deepgram.removeAllListeners();
+			deepgram = null;
+		}
+	});
+});
+
+app.use(cors({
+	origin: config.invokeOrigin,
+	methods: "GET,HEAD,PUT,PATCH,POST,DELETE",
+	credentials: true
+}));
+app.use(bodyParser.json())
+app.use(express.static("public/"));
+app.get("/", (req, res) => {
+	res.sendFile(__dirname + "/public/index.html");
+});
+
+app.post("/synthesis", async (req, res) => {
+	console.log(req.body, req.body.text)
+	const stream = await synthesisModel(req.body.text, req.body.speaker)
+
+	if (stream) {
+		res.set({
+			"Content-Type": "application/octet-stream"
+		})
+
+		const readable = new Readable.fromWeb(stream)
+		return readable.pipe(res)
+	} else {
+		return res.status(200).end()
+	}
+})
+
+server.listen(config.PORT, () => {
+	console.log(`
+
+
+BrainBloomAI's own speech recognition and transcription service.
+
+[STARTED]
+Hosted on port ${config.PORT}
+
+
+`);
+});
