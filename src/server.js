@@ -138,7 +138,7 @@ app.post("/synthesis", async (req, res) => {
 		const readable = new Readable.fromWeb(stream)
 		return readable.pipe(res)
 	} else {
-		return res.status(200).end()
+		return res.status(500).end()
 	}
 })
 

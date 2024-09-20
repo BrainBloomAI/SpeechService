@@ -2,6 +2,11 @@ const { deepgramClient } = require("./deepgramClient");
 
 const synthesisModel = async (text, speaker) => {
 	// STEP 1: Make a request and configure the request with options (such as model choice, audio configuration, etc.)
+	if (text.length >= 1000) {
+		// prevent API abuse
+		return
+	}
+
 	const response = await deepgramClient.speak.request(
 		{ text },
 		{
