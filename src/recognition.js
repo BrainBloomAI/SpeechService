@@ -3,10 +3,10 @@ const { deepgramClient } = require("./deepgramClient");
 
 const recognitionModel = (socket, lang, closeFn, res) => {
 	const deepgram = deepgramClient.listen.live({
-		language: ["en", "zh-CN"][lang],
+		language: ["en", "zh-CN", "ms", "ta", "hi"][lang],
 		punctuate: true,
 		smart_format: true,
-		model: "nova-2",
+		model: lang === 3 ? "enhanced" : "nova-2", // only enhanced has support for tamil
 
 		encoding: "opus",
 		filler_words: true,
