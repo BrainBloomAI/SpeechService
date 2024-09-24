@@ -8,9 +8,9 @@ const recognitionModel = (socket, lang, closeFn, res) => {
 		smart_format: true,
 		model: lang === 3 ? "enhanced" : "nova-2", // only enhanced has support for tamil
 
-		encoding: "opus",
 		filler_words: true,
 
+		endpointing: 100,
 		interim_results: true,
 		utterance_end_ms: "1000",
 		vad_events: true
@@ -42,23 +42,9 @@ const recognitionModel = (socket, lang, closeFn, res) => {
 
 					closeFn() // call close function
 				} else {
-					emptyTranscriptCount += 1
-					if (emptyTranscriptCount >= 2) {
-						// 2 consecutive empty transcripts
-						if (transcriptContentPrior) {
-							// guaranteed to have content (where transcriptContentPrior.length >= 1); send end event
-							socket.emit("transcription", {
-								type: "end",
-								content: data.channel.alternatives[0].transcript,
-								duration: data.duration
-							})
-						} else {
-							// no prior content to go with; have client retry once current deepgram instance is closed
-							socket.emit("transcription-failure")
-						}
-					}
-
-					closeFn()
+					// failed
+					socket.emit("transcription-failure")
+					closeFn() // close deepgram connection (reset it when user re-initiates mic input)
 				}
 			} else {
 				// interim results

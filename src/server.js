@@ -77,7 +77,7 @@ recognitionNsp.on("connection", (socket) => {
 		return previousAudio;
 	}
 	socket.on("audio", (message) => {
-		console.log("socket: client data received");
+		console.log("socket: client data received", message);
 		if (deepgram == null) {
 			deepgram = recognitionModel(socket, globalPrefs.lang, resetRecognitionInstance)
 		}
@@ -87,7 +87,7 @@ recognitionNsp.on("connection", (socket) => {
 		if (deepgram.getReadyState() === 1 /* OPEN */) {
 			console.log("socket: data sent to deepgram");
 			if (previousAudio.byteLength >= 1) {
-				deepgram.send(new Blob([appendAudio(message)]));
+				deepgram.send(new Blob([appendAudio(message.buffer.slice(message.byteOffset, message.byteOffset +message.byteLength))]));
 				previousAudio = new ArrayBuffer(0)
 			} else {
 				deepgram.send(new Blob([message]))
@@ -97,10 +97,10 @@ recognitionNsp.on("connection", (socket) => {
 			deepgram.finish();
 			deepgram.removeAllListeners();
 			
-			appendAudio(message) // store chunk for use later
+			appendAudio(message.buffer.slice(message.byteOffset, message.byteOffset +message.byteLength)) // store chunk for use later
 			deepgram = recognitionModel(socket, globalPrefs.lang, resetRecognitionInstance)
 		} else {
-			appendAudio(message) // store chunk for use later
+			appendAudio(message.buffer.slice(message.byteOffset, message.byteOffset +message.byteLength)) // store chunk for use later
 			console.log("socket: data couldn't be sent to deepgram");
 		}
 	});
