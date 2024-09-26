@@ -48,6 +48,7 @@ const recognitionModel = (socket, lang, closeFn, res) => {
 				}
 			} else {
 				// interim results
+				console.log("INTERIM", emptyTranscriptCount)
 				if (data.channel.alternatives[0].transcript.length >= 1) {
 					// has transcription
 					emptyTranscriptCount = 0
@@ -60,6 +61,7 @@ const recognitionModel = (socket, lang, closeFn, res) => {
 					});
 				} else {
 					// empty transcription
+					console.log("emptyTranscriptCount", emptyTranscriptCount, transcriptContentPrior)
 					if (++emptyTranscriptCount >= 2) {
 						// reached treshold, send end event
 						socket.emit("transcription", {
