@@ -26,7 +26,7 @@ const recognitionModel = (socket, lang, closeFn, res) => {
 		let emptyTranscriptCount = 0
 		let transcriptContentPrior; // store the latest non-empty transcribed content here
 		deepgram.addListener(LiveTranscriptionEvents.Transcript, (data) => {
-			console.log("deepgram: transcript received\n\t", data.type, data.speech_final, data.channel.alternatives[0].transcript);
+			console.log("deepgram: transcript received!!!!\n\t", data.type, data.speech_final, data.channel.alternatives[0].transcript);
 
 			if (data.speech_final) {
 				// end of speech
