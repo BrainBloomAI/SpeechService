@@ -28,7 +28,7 @@ const recognitionModel = (socket, lang, closeFn, res) => {
 		deepgram.addListener(LiveTranscriptionEvents.Transcript, (data) => {
 			console.log("deepgram: transcript received!!!!\n\t", data.type, data.speech_final, data.channel.alternatives[0].transcript);
 
-			if (data.speech_final) {
+			if (data.speech_final && data.channel.alternatives[0].transcript.length >= 1) {
 				// end of speech
 				if (data.channel.alternatives[0].transcript.length >= 1) {
 					emptyTranscriptCount = 0
