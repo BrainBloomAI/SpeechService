@@ -48,14 +48,33 @@ const recognitionModel = (socket, lang, closeFn, res) => {
 				}
 			} else {
 				// interim results
-				emptyTranscriptCount = 0
-				transcriptContentPrior = data.channel.alternatives[0].transcript
+				if (data.channel.alternatives[0].transcript.length >= 1) {
+					// has transcription
+					emptyTranscriptCount = 0
+					transcriptContentPrior = data.channel.alternatives[0].transcript
 
-				socket.emit("transcription", {
-					type: "interim",
-					content: data.channel.alternatives[0].transcript,
-					duration: data.duration
-				});
+					socket.emit("transcription", {
+						type: "interim",
+						content: data.channel.alternatives[0].transcript,
+						duration: data.duration
+					});
+				} else {
+					// empty transcription
+					if (++emptyTranscriptCount >= 2) {
+						// reached treshold, send end event
+						socket.emit("transcription", {
+							type: "end",
+							content: transcriptContentPrior,
+							duration: data.duration
+						});
+
+						// reset context
+						emptyTranscriptCount = 0
+						transcriptContentPrior = null // reset content
+
+						closeFn() // call close function
+					}
+				}
 			}
 		});
 
