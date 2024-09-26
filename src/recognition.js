@@ -45,6 +45,9 @@ const recognitionModel = (socket, lang, closeFn, res) => {
 					// failed
 					socket.emit("transcription-failure")
 					closeFn() // close deepgram connection (reset it when user re-initiates mic input)
+
+					emptyTranscriptCount = 0
+					transcriptContentPrior = null // reset content
 				}
 			} else {
 				// interim results
@@ -64,17 +67,26 @@ const recognitionModel = (socket, lang, closeFn, res) => {
 					console.log("emptyTranscriptCount", emptyTranscriptCount, transcriptContentPrior)
 					if (++emptyTranscriptCount >= 2) {
 						// reached treshold, send end event
-						socket.emit("transcription", {
-							type: "end",
-							content: transcriptContentPrior,
-							duration: data.duration
-						});
+						if (transcriptContentPrior == null) {
+							socket.emit("transcription-failure")
+							closeFn()
 
-						// reset context
-						emptyTranscriptCount = 0
-						transcriptContentPrior = null // reset content
+							emptyTranscriptCount = 0
+							transcriptContentPrior = null // reset content
+						} else {
+							// has prior content saved
+							socket.emit("transcription", {
+								type: "end",
+								content: transcriptContentPrior,
+								duration: data.duration
+							});
 
-						closeFn() // call close function
+							// reset context
+							emptyTranscriptCount = 0
+							transcriptContentPrior = null // reset content
+
+							closeFn() // call close function
+						}
 					}
 				}
 			}
