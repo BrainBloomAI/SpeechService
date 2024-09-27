@@ -28,3 +28,5 @@ Only one variable is used to maintain sessions
 - [`express.js`](https://expressjs.com/): NodeJS web framework
 - [`socket.IO`](https://socket.io/): NodeJS web socket library
 - [`Deepgram JS SDK`](https://github.com/deepgram/deepgram-js-sdk): JS SDK to interact with Deepgram's API
+
+©️ 2024 BrainBloomAI Team. All rights reserved.
